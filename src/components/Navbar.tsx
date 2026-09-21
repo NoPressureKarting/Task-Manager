@@ -88,12 +88,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between py-2 sm:py-2.5 gap-2">
           {/* App Logo & Title */}
           <div
+            id="navbar-brand-button"
             onClick={() => onViewChange('dashboard')}
             className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group shrink-0"
           >
-            <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white shadow-xs ring-1 ring-indigo-400/30 group-hover:scale-105 transition-transform">
-              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
-            </div>
+            <img
+              id="navbar-app-logo"
+              src="/logo.svg"
+              alt="TaskSync Daily Logo"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl shadow-xs group-hover:scale-105 group-active:scale-95 transition-transform object-contain ring-1 ring-indigo-500/20"
+              referrerPolicy="no-referrer"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-white block leading-tight">

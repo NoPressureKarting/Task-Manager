@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="tsBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="50%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+
+    <!-- Inner Highlight -->
+    <linearGradient id="tsGloss" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.28" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Sync Orbit Gradient -->
+    <linearGradient id="tsOrbit1" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="60%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#C084FC" />
+    </linearGradient>
+
+    <linearGradient id="tsOrbit2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="50%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#818CF8" />
+    </linearGradient>
+
+    <!-- Checkmark Gradient -->
+    <linearGradient id="tsCheck" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#F1F5F9" />
+    </linearGradient>
+
+    <!-- Soft Glow Filter -->
+    <filter id="tsGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#4338CA" flood-opacity="0.45" />
+    </filter>
+
+    <filter id="checkShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1E1B4B" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Base Icon Squircle Canvas with drop shadow -->
+  <g filter="url(#tsGlow)">
+    <rect x="10" y="10" width="100" height="100" rx="28" fill="url(#tsBg)" />
+  </g>
+
+  <!-- Outer Glass Border Stroke -->
+  <rect x="10" y="10" width="100" height="100" rx="28" fill="none" stroke="url(#tsGloss)" stroke-width="2" />
+
+  <!-- Top Gloss Highlight -->
+  <path d="M12 36 C12 22.745 22.745 12 36 12 L84 12 C97.255 12 108 22.745 108 36 L108 44 C80 50 40 50 12 44 Z" fill="url(#tsGloss)" opacity="0.4" />
+
+  <!-- Sync Ring Loop (Upper Arc with Arrowhead) -->
+  <path d="M35 55 A27 27 0 0 1 84 43" fill="none" stroke="url(#tsOrbit1)" stroke-width="6.5" stroke-linecap="round" />
+  <!-- Upper arrow head -->
+  <path d="M82 34 L88 44 L77 48" fill="none" stroke="url(#tsOrbit1)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Sync Ring Loop (Lower Arc with Arrowhead) -->
+  <path d="M85 65 A27 27 0 0 1 36 77" fill="none" stroke="url(#tsOrbit2)" stroke-width="6.5" stroke-linecap="round" />
+  <!-- Lower arrow head -->
+  <path d="M38 86 L32 76 L43 72" fill="none" stroke="url(#tsOrbit2)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Calendar Day Top Accent (Daily Indicator) -->
+  <circle cx="88" cy="28" r="4.5" fill="#34D399" />
+  <circle cx="88" cy="28" r="7" fill="none" stroke="#34D399" stroke-opacity="0.35" stroke-width="1.5" />
+
+  <!-- Central Prominent Task Checkmark -->
+  <g filter="url(#checkShadow)">
+    <path d="M42 60 L53 71 L78 46" fill="none" stroke="url(#tsCheck)" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "A scheduled or running task item synchronized with Google Tasks and Calendar",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "Unique Task ID" },
+        "userId": { "type": "string", "maxLength": 128, "description": "Owner user ID" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200, "description": "Task title" },
+        "description": { "type": "string", "maxLength": 4000, "description": "Optional notes or details" },
+        "assignedDate": { "type": "string", "maxLength": 30, "description": "Assigned start date YYYY-MM-DD" },
+        "assignedTime": { "type": "string", "maxLength": 10, "description": "Assigned start time HH:mm" },
+        "dueDate": { "type": "string", "minLength": 1, "maxLength": 30, "description": "Due completion date YYYY-MM-DD" },
+        "dueTime": { "type": "string", "maxLength": 10, "description": "Due time HH:mm" },
+        "estimatedDurationMinutes": { "type": "number", "description": "Duration estimate in minutes" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"], "description": "Priority urgency" },
+        "category": { "type": "string", "enum": ["work", "personal", "health", "errands", "learning", "other"], "description": "Task domain category" },
+        "completed": { "type": "boolean", "description": "Completion state" },
+        "completedAt": { "type": "string", "maxLength": 50, "description": "Completion ISO timestamp" },
+        "status": { "type": "string", "enum": ["inbox", "approved", "rejected", "scheduled"], "description": "Inbox review & lifecycle status" },
+        "submittedBy": { "type": "object", "description": "External or internal submitter info" },
+        "reviewNotes": { "type": "string", "maxLength": 1000, "description": "Notes from reviewer" },
+        "reviewedAt": { "type": "string", "maxLength": 50, "description": "Reviewed timestamp" },
+        "reviewedBy": { "type": "string", "maxLength": 128, "description": "Reviewer identity" },
+        "assignedTo": { "type": "string", "maxLength": 128, "description": "Assigned team member" },
+        "tags": { "type": "array", "description": "List of tag labels" },
+        "syncedToGoogleCalendar": { "type": "boolean", "description": "Synced with Google Calendar" },
+        "googleCalendarEventId": { "type": "string", "maxLength": 128, "description": "Google Calendar event ID" },
+        "googleCalendarHtmlLink": { "type": "string", "maxLength": 500, "description": "Google Calendar link" },
+        "syncedToGoogleTasks": { "type": "boolean", "description": "Synced with Google Tasks" },
+        "googleTaskId": { "type": "string", "maxLength": 128, "description": "Google Task ID" },
+        "googleTaskListId": { "type": "string", "maxLength": 128, "description": "Google Task List ID" },
+        "googleTaskWebViewLink": { "type": "string", "maxLength": 500, "description": "Google Tasks web link" },
+        "lastSyncedAt": { "type": "string", "maxLength": 50, "description": "Last synchronization timestamp" },
+        "reminderEnabled": { "type": "boolean", "description": "Whether reminders are active" },
+        "reminderMinutesBefore": { "type": "number", "description": "Reminder threshold in minutes" },
+        "reminderDismissedForDay": { "type": "string", "maxLength": 30, "description": "Date string for daily dismiss" },
+        "notes": { "type": "string", "maxLength": 4000, "description": "Additional user notes" },
+        "createdAt": { "type": "string", "maxLength": 50, "description": "Creation ISO timestamp" },
+        "updatedAt": { "type": "string", "maxLength": 50, "description": "Updated ISO timestamp" }
+      },
+      "required": ["id", "title", "dueDate", "category", "priority", "completed", "createdAt"]
+    },
+    "Collaborator": {
+      "title": "Collaborator",
+      "description": "Authorized team member with designated access roles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "Collaborator ID" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100, "description": "Full name" },
+        "email": { "type": "string", "minLength": 3, "maxLength": 120, "description": "Email address" },
+        "role": { "type": "string", "enum": ["admin", "editor", "contributor", "viewer"], "description": "Access tier" },
+        "status": { "type": "string", "enum": ["active", "invited"], "description": "Status" },
+        "avatarUrl": { "type": "string", "maxLength": 500, "description": "Avatar image URL" },
+        "department": { "type": "string", "maxLength": 100, "description": "Team department" },
+        "addedAt": { "type": "string", "maxLength": 50, "description": "Added ISO timestamp" }
+      },
+      "required": ["id", "name", "email", "role", "status", "addedAt"]
+    },
+    "ShortenedUrl": {
+      "title": "ShortenedUrl",
+      "description": "Short link forwarding to specific app views with analytics tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "Link ID" },
+        "originalUrl": { "type": "string", "minLength": 1, "maxLength": 500, "description": "Destination target URL" },
+        "shortSlug": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$", "description": "Branded slug" },
+        "shortUrl": { "type": "string", "maxLength": 128, "description": "Display short URL" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 100, "description": "Link label" },
+        "clicks": { "type": "number", "description": "Click analytics counter" },
+        "createdAt": { "type": "string", "maxLength": 50, "description": "Created ISO timestamp" }
+      },
+      "required": ["id", "originalUrl", "shortSlug", "shortUrl", "title", "clicks", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Active tasks, scheduled events, and review inbox queue"
+    },
+    "/collaborators/{collabId}": {
+      "schema": { "$ref": "#/entities/Collaborator" },
+      "description": "Authorized team collaborators and access roles"
+    },
+    "/shortlinks/{linkId}": {
+      "schema": { "$ref": "#/entities/ShortenedUrl" },
+      "description": "Branded short links and public portal forwarders"
+    }
+  }
+}

@@ -1,0 +1,208 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'KingGoddeth@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // --- Entity Validation Functions ---
+    function isValidTask(data) {
+      return data.keys().hasAll(['id', 'title', 'dueDate', 'category', 'priority', 'completed', 'createdAt']) &&
+        data.id is string && isValidId(data.id) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.dueDate is string && data.dueDate.size() <= 30 &&
+        data.category in ['work', 'personal', 'health', 'errands', 'learning', 'other'] &&
+        data.priority in ['low', 'medium', 'high', 'urgent'] &&
+        data.completed is bool &&
+        data.createdAt is string && data.createdAt.size() <= 50 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 4000)) &&
+        (!('assignedDate' in data) || (data.assignedDate is string && data.assignedDate.size() <= 30)) &&
+        (!('assignedTime' in data) || (data.assignedTime is string && data.assignedTime.size() <= 10)) &&
+        (!('dueTime' in data) || (data.dueTime is string && data.dueTime.size() <= 10)) &&
+        (!('estimatedDurationMinutes' in data) || data.estimatedDurationMinutes is number) &&
+        (!('status' in data) || data.status in ['inbox', 'approved', 'rejected', 'scheduled']) &&
+        (!('submittedBy' in data) || (data.submittedBy is map)) &&
+        (!('reviewNotes' in data) || (data.reviewNotes is string && data.reviewNotes.size() <= 1000)) &&
+        (!('reviewedAt' in data) || (data.reviewedAt is string && data.reviewedAt.size() <= 50)) &&
+        (!('reviewedBy' in data) || (data.reviewedBy is string && data.reviewedBy.size() <= 128)) &&
+        (!('assignedTo' in data) || (data.assignedTo is string && data.assignedTo.size() <= 128)) &&
+        (!('tags' in data) || (data.tags is list && data.tags.size() <= 20)) &&
+        (!('syncedToGoogleCalendar' in data) || data.syncedToGoogleCalendar is bool) &&
+        (!('googleCalendarEventId' in data) || (data.googleCalendarEventId is string && data.googleCalendarEventId.size() <= 128)) &&
+        (!('googleCalendarHtmlLink' in data) || (data.googleCalendarHtmlLink is string && data.googleCalendarHtmlLink.size() <= 500)) &&
+        (!('syncedToGoogleTasks' in data) || data.syncedToGoogleTasks is bool) &&
+        (!('googleTaskId' in data) || (data.googleTaskId is string && data.googleTaskId.size() <= 128)) &&
+        (!('googleTaskListId' in data) || (data.googleTaskListId is string && data.googleTaskListId.size() <= 128)) &&
+        (!('googleTaskWebViewLink' in data) || (data.googleTaskWebViewLink is string && data.googleTaskWebViewLink.size() <= 500)) &&
+        (!('lastSyncedAt' in data) || (data.lastSyncedAt is string && data.lastSyncedAt.size() <= 50)) &&
+        (!('reminderEnabled' in data) || data.reminderEnabled is bool) &&
+        (!('reminderMinutesBefore' in data) || data.reminderMinutesBefore is number) &&
+        (!('reminderDismissedForDay' in data) || (data.reminderDismissedForDay is string && data.reminderDismissedForDay.size() <= 30)) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 4000)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50)) &&
+        (!('completedAt' in data) || (data.completedAt is string && data.completedAt.size() <= 50)) &&
+        (!('userId' in data) || (data.userId is string && data.userId.size() <= 128));
+    }
+
+    function isValidCollaborator(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'role', 'status', 'addedAt']) &&
+        data.id is string && isValidId(data.id) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 120 &&
+        data.role in ['admin', 'editor', 'contributor', 'viewer'] &&
+        data.status in ['active', 'invited'] &&
+        data.addedAt is string && data.addedAt.size() <= 50 &&
+        (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+        (!('department' in data) || (data.department is string && data.department.size() <= 100));
+    }
+
+    function isValidShortlink(data) {
+      return data.keys().hasAll(['id', 'originalUrl', 'shortSlug', 'shortUrl', 'title', 'clicks', 'createdAt']) &&
+        data.id is string && isValidId(data.id) &&
+        data.originalUrl is string && data.originalUrl.size() >= 1 && data.originalUrl.size() <= 500 &&
+        data.shortSlug is string && data.shortSlug.size() >= 1 && data.shortSlug.size() <= 64 && data.shortSlug.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.shortUrl is string && data.shortUrl.size() <= 128 &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+        data.clicks is number && data.clicks >= 0 &&
+        data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // --- Collections ---
+
+    // Boot / Connection verification probe
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // Tasks Collection
+    match /tasks/{taskId} {
+      allow get: if isValidId(taskId);
+      allow list: if isSignedIn();
+
+      // Create: Verified users or unauthenticated external submitters strictly constrained to 'inbox'
+      allow create: if isValidId(taskId) && isValidTask(incoming()) && (
+        isVerifiedUser() ||
+        (!isSignedIn() && incoming().status == 'inbox' && incoming().completed == false)
+      );
+
+      // Update: Tiered action-based updates
+      allow update: if isValidId(taskId) && isValidTask(incoming()) && isVerifiedUser() && (
+        isAdmin() ||
+        // Action 1: Toggle completion state
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'completedAt', 'updatedAt']) &&
+          incoming().id == existing().id &&
+          incoming().createdAt == existing().createdAt
+        ) ||
+        // Action 2: Edit task fields
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'description', 'assignedDate', 'assignedTime', 'dueDate', 'dueTime',
+            'estimatedDurationMinutes', 'priority', 'category', 'tags', 'reminderEnabled',
+            'reminderMinutesBefore', 'reminderDismissedForDay', 'notes', 'updatedAt'
+          ]) &&
+          incoming().id == existing().id &&
+          incoming().createdAt == existing().createdAt
+        ) ||
+        // Action 3: Sync metadata with Google Tasks / Calendar
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'syncedToGoogleTasks', 'googleTaskId', 'googleTaskListId', 'googleTaskWebViewLink',
+            'syncedToGoogleCalendar', 'googleCalendarEventId', 'googleCalendarHtmlLink', 'lastSyncedAt', 'updatedAt'
+          ]) &&
+          incoming().id == existing().id &&
+          incoming().createdAt == existing().createdAt
+        ) ||
+        // Action 4: Inbox triage & review
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'status', 'dueDate', 'dueTime', 'assignedDate', 'assignedTime', 'priority', 'category',
+            'reviewNotes', 'reviewedAt', 'reviewedBy', 'assignedTo', 'updatedAt',
+            'syncedToGoogleCalendar', 'googleCalendarEventId', 'googleCalendarHtmlLink',
+            'syncedToGoogleTasks', 'googleTaskId', 'googleTaskListId', 'googleTaskWebViewLink', 'lastSyncedAt'
+          ]) &&
+          incoming().id == existing().id &&
+          incoming().createdAt == existing().createdAt
+        )
+      );
+
+      allow delete: if isValidId(taskId) && isVerifiedUser();
+    }
+
+    // Collaborators Collection
+    match /collaborators/{collabId} {
+      allow get, list: if isVerifiedUser();
+
+      allow create: if isValidId(collabId) && isVerifiedUser() && isValidCollaborator(incoming()) && (
+        isAdmin() || incoming().role != 'admin'
+      );
+
+      allow update: if isValidId(collabId) && isVerifiedUser() && isValidCollaborator(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().addedAt == existing().addedAt && (
+          isAdmin() || (
+            incoming().role != 'admin' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'department', 'avatarUrl', 'status'])
+          )
+        );
+
+      allow delete: if isValidId(collabId) && isVerifiedUser();
+    }
+
+    // Shortlinks Collection
+    match /shortlinks/{linkId} {
+      allow get: if isValidId(linkId);
+      allow list: if isVerifiedUser();
+
+      allow create: if isValidId(linkId) && isVerifiedUser() && isValidShortlink(incoming());
+
+      allow update: if isValidId(linkId) && (
+        // Action 1: Click count increment
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly(['clicks']) &&
+          incoming().clicks == existing().clicks + 1
+        ) ||
+        // Action 2: Metadata update by verified user
+        (
+          isVerifiedUser() &&
+          isValidShortlink(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'originalUrl', 'shortSlug', 'shortUrl'])
+        )
+      );
+
+      allow delete: if isValidId(linkId) && isVerifiedUser();
+    }
+  }
+}

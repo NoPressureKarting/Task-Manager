@@ -1,0 +1,6 @@
+{
+  "name": "Task List & Calendar Sync",
+  "description": "A running task list manager that synchronizes with Google Calendar and provides daily reminders.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

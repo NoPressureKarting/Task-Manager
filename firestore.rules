@@ -106,8 +106,7 @@ service cloud.firestore {
 
     // Tasks Collection
     match /tasks/{taskId} {
-      allow get: if isValidId(taskId);
-      allow list: if isSignedIn();
+      allow get, list: if isVerifiedUser();
 
       // Create: Verified users or unauthenticated external submitters strictly constrained to 'inbox'
       allow create: if isValidId(taskId) && isValidTask(incoming()) && (
@@ -124,12 +123,14 @@ service cloud.firestore {
           incoming().id == existing().id &&
           incoming().createdAt == existing().createdAt
         ) ||
-        // Action 2: Edit task fields
+        // Action 2: Edit task fields & sync preferences
         (
           incoming().diff(existing()).affectedKeys().hasOnly([
             'title', 'description', 'assignedDate', 'assignedTime', 'dueDate', 'dueTime',
             'estimatedDurationMinutes', 'priority', 'category', 'tags', 'reminderEnabled',
-            'reminderMinutesBefore', 'reminderDismissedForDay', 'notes', 'updatedAt'
+            'reminderMinutesBefore', 'reminderDismissedForDay', 'notes', 'updatedAt',
+            'syncedToGoogleTasks', 'googleTaskId', 'googleTaskListId', 'googleTaskWebViewLink',
+            'syncedToGoogleCalendar', 'googleCalendarEventId', 'googleCalendarHtmlLink', 'lastSyncedAt'
           ]) &&
           incoming().id == existing().id &&
           incoming().createdAt == existing().createdAt
@@ -171,12 +172,13 @@ service cloud.firestore {
         incoming().id == existing().id &&
         incoming().addedAt == existing().addedAt && (
           isAdmin() || (
+            existing().role != 'admin' &&
             incoming().role != 'admin' &&
             incoming().diff(existing()).affectedKeys().hasOnly(['name', 'department', 'avatarUrl', 'status'])
           )
         );
 
-      allow delete: if isValidId(collabId) && isVerifiedUser();
+      allow delete: if isValidId(collabId) && isAdmin();
     }
 
     // Shortlinks Collection
